@@ -1,2 +1,13 @@
 .idea/
 cmake-build-debug/
+*.o
+mm
+
+# Too big for github.
+matrix/A4096.csv
+matrix/A8192.csv
+matrix/B4096.csv
+matrix/B8192.csv
+matrix/C4096.csv
+matrix/C8192.csv
+

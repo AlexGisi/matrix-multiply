@@ -1,41 +1,71 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <Eigen>
 #include "mult.h"
 
 using namespace std;
 using namespace Eigen;
 
-#define MAXBUFSIZE  ((int) 1e6)
+MatrixXd readMatrix(const char*, long int);
+bool verify(algFn, const std::string&, const std::string&);
+algFn algStrToFn(const std::string&);
 
-MatrixXd readMatrix(const char*);
-bool verify(algFn);
 
+int main(int argc, char* argv[]) {
+    if (argc != 4) {
+        std::cout << "Must have first argument matrix directory, "
+                     "second argument size, third argument algorithm ("
+                     "naive, block)." << std::endl;
+        return -1;
+    }
+    std::string matrix_dir(argv[1]);
+    std::string size(argv[2]);
+    std::string alg_str(argv[3]);
 
-int main() {
-    cout << verify(naive) << endl;
+    algFn alg = algStrToFn(alg_str);
+
+    if (alg == nullptr) {
+        std::cout << "Bad function argument." << std::endl;
+        return -1;
+    }
+
+    cout << verify(alg, matrix_dir, size) << endl;
 
     return 0;
 }
 
-bool verify(algFn alg) {
-    MatrixXd A = readMatrix("/Users/alex/Documents/Code/C++/matrixmultiply/matrix/A16.csv");
-    MatrixXd B = readMatrix("/Users/alex/Documents/Code/C++/matrixmultiply/matrix/B16.csv");
-    MatrixXd C = readMatrix("/Users/alex/Documents/Code/C++/matrixmultiply/matrix/C16.csv");
+bool verify(algFn alg, const std::string& dir, const std::string& size) {
+    std::string a_dir = dir + "/A" + size + ".csv";
+    std::string b_dir = dir + "/B" + size + ".csv";
+    std::string c_dir = dir + "/C" + size + ".csv";
 
-    MatrixXd res = naive(A, B);
+    MatrixXd A = readMatrix(a_dir.c_str(), std::stoi(size));
+    MatrixXd B = readMatrix(b_dir.c_str(), std::stoi(size));
+    MatrixXd C = readMatrix(c_dir.c_str(), std::stoi(size));
+
+    MatrixXd res = alg(A, B);
 
     return res == C;
 }
 
+algFn algStrToFn(const std::string& s) {
+    if (s == "naive") {
+        return naive;
+    } else if (s == "block")
+        return block;
+    else
+        return nullptr;
+}
 
-// From https://stackoverflow.com/questions/20786220/
+
+// Adapted from https://stackoverflow.com/questions/20786220/
 // eigen-library-initialize-matrix-with-data-from-file-or-existing-stdvector
-MatrixXd readMatrix(const char *filename)
+MatrixXd readMatrix(const char *filename, long int width)
 {
     int cols = 0, rows = 0;
-    double buff[MAXBUFSIZE];
+    auto buff_ptr = std::make_unique<std::vector<double>>(width);
 
     // Read numbers from file into buffer.
     ifstream infile;
@@ -48,7 +78,7 @@ MatrixXd readMatrix(const char *filename)
         int temp_cols = 0;
         stringstream stream(line);
         while(! stream.eof())
-            stream >> buff[cols*rows+temp_cols++];
+            stream >> (*buff_ptr)[cols*rows+temp_cols++];
 
         if (temp_cols == 0)
             continue;
@@ -67,7 +97,7 @@ MatrixXd readMatrix(const char *filename)
     MatrixXd result(rows,cols);
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
-            result(i,j) = buff[ cols*i+j ];
+            result(i,j) = (*buff_ptr)[ cols*i+j ];
 
     return result;
 };
