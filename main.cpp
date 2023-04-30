@@ -129,6 +129,9 @@ MatrixXd readMatrix(const char *filename, long int width)
     // Read numbers from file into buffer.
     std::ifstream infile;
     infile.open(filename);
+    if (infile.fail())
+        throw std::runtime_error(std::string("Could not open ") + filename);
+
     while (! infile.eof())
     {
         std::string line;

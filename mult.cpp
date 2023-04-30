@@ -6,9 +6,27 @@
 #include "mult.h"
 
 #define NAIVE_THRESHOLD 32
+// #define ERR
 
 using namespace Eigen;
 
+
+#ifdef ERR
+#include <iostream>
+#include <ctime>
+#include <chrono>
+
+void printOp(int i, int j, int k) {
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    auto tm = *std::localtime(&now_time_t);
+    char buffer[9];
+    strftime(buffer, sizeof(buffer), "%H:%M:%S", &tm);
+    std::cerr << buffer
+        << ": " << "C(" << i << ',' << j << ") += A(" << i << ',' << k
+        << ") * B(" << k << ',' << j << ')' << std::endl;
+}
+#endif
 
 MatrixXd naive(const MatrixXd & A, const MatrixXd & B) {
     long int N = A.rows();
@@ -16,8 +34,12 @@ MatrixXd naive(const MatrixXd & A, const MatrixXd & B) {
     MatrixXd C = MatrixXd::Zero(N, N);
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++)
-            for (int k = 0; k < N; k++)
+            for (int k = 0; k < N; k++) {
                 C(i, j) += A(i, k) * B(k, j);
+#ifdef ERR
+                printOp(i, j, k);
+#endif
+            }
 
     return C;
 }
@@ -33,8 +55,12 @@ MatrixXd block(const MatrixXd & A, const MatrixXd & B) {
             for (int bk = 0; bk < n_blocks; bk++)
                 for (int i = 0; i < block_size; i++)
                     for (int j = 0; j < block_size; j++)
-                        for (int k = 0; k < block_size; k++)
+                        for (int k = 0; k < block_size; k++) {
                             C(bi*block_size + i, bj*block_size+j) += A(bi*block_size+i, bk*block_size+k) * B(bk*block_size+k, bj*block_size+j);
+#ifdef ERR
+                            printOp(i, j, k);
+#endif
+                        }
 
     return C;
 }
@@ -45,8 +71,12 @@ void dac(const MatrixXd & A, const MatrixXd& B, MatrixXd& C,
     if (x <= NAIVE_THRESHOLD) {
         for (int i=0; i < x; i++)
             for (int j = 0; j < x; j++)
-                for (int k = 0; k < x; k++)
+                for (int k = 0; k < x; k++) {
                     C(ic+i, jc+j) += A(ia+i, ja+k) * B(ib+k, jb+j);
+#ifdef ERR
+                    printOp(i, j, k);
+#endif
+                }
     } else {
         int y = x / 2;
 
